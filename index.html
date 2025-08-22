@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cat Feeding Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f9fafb;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            min-height: 100vh;
+            background-color: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            background-color: #3b82f6;
+            color: white;
+            padding: 1rem;
+            text-align: center;
+        }
+        
+        .tabs {
+            display: flex;
+            background-color: white;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 0.75rem;
+            text-align: center;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            color: #6b7280;
+            border-bottom: 2px solid transparent;
+        }
+        
+        .tab.active {
+            color: #3b82f6;
+            border-bottom-color: #3b82f6;
+        }
+        
+        .tab:hover {
+            color: #374151;
+        }
+        
+        .content {
+            padding: 1rem;
+        }
+        
+        .week-selector {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .week-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 500;
+            background-color: #e5e7eb;
+            color: #374151;
+        }
+        
+        .week-btn.active {
+            background-color: #3b82f6;
+            color: white;
+        }
+        
+        .reset-btn {
+            background-color: #fef2f2;
+            color: #dc2626;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .reset-btn:hover {
+            background-color: #fecaca;
+        }
+        
+        .category {
+            margin-bottom: 2rem;
+        }
+        
+        .category-title {
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #e5e7eb;
+            text-transform: uppercase;
+            font-size: 0.875rem;
+        }
+        
+        .food-item {
+            background-color: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .food-info h4 {
+            font-weight: 500;
+            color: #111827;
+            margin-bottom: 0.25rem;
+        }
+        
+        .food-stats {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+        
+        .counter {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .counter-btn {
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1.125rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .counter-btn.minus {
+            background-color: #fef2f2;
+            color: #dc2626;
+        }
+        
+        .counter-btn.plus {
+            background-color: #f0fdf4;
+            color: #16a34a;
+        }
+        
+        .counter-btn:hover.minus {
+            background-color: #fecaca;
+        }
+        
+        .counter-btn:hover.plus {
+            background-color: #dcfce7;
+        }
+        
+        .count {
+            font-weight: 600;
+            font-size: 1.125rem;
+            min-width: 2rem;
+            text-align: center;
+        }
+        
+        .recommendations {
+            margin-top: 1rem;
+        }
+        
+        .recommendation {
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            border: 1px solid;
+        }
+        
+        .recommendation.high {
+            background-color: #fef2f2;
+            border-color: #fecaca;
+            color: #7f1d1d;
+        }
+        
+        .recommendation.medium {
+            background-color: #fffbeb;
+            border-color: #fde68a;
+            color: #92400e;
+        }
+        
+        .recommendation.low {
+            background-color: #eff6ff;
+            border-color: #bfdbfe;
+            color: #1e40af;
+        }
+        
+        .success-message {
+            background-color: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            text-align: center;
+        }
+        
+        .overview {
+            margin-top: 2rem;
+        }
+        
+        .overview-item {
+            background-color: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .overview-item h4 {
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+        
+        .overview-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            font-size: 0.75rem;
+            margin-top: 0.5rem;
+        }
+        
+        .overview-stat {
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🐱 Cat Feeding Tracker</h1>
+        </div>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('track')">📝 Track Feeding</button>
+            <button class="tab" onclick="showTab('recommendations')">🏆 Recommendations</button>
+        </div>
+        
+        <div id="track-tab" class="content">
+            <div class="week-selector">
+                <button class="week-btn active" onclick="selectWeek(1)">Week 1</button>
+                <button class="week-btn" onclick="selectWeek(2)">Week 2</button>
+                <button class="week-btn" onclick="selectWeek(3)">Week 3</button>
+                <button class="week-btn" onclick="selectWeek(4)">Week 4</button>
+            </div>
+            
+            <button class="reset-btn" onclick="resetData()">Reset All Data</button>
+            
+            <div id="food-categories"></div>
+        </div>
+        
+        <div id="recommendations-tab" class="content hidden">
+            <h2>📈 Feeding Recommendations</h2>
+            <div id="recommendations-content"></div>
+            <div id="monthly-overview" class="overview"></div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let currentWeek = 1;
+        let activeTab = 'track';
+        let feedingData = {};
+        
+        const foodCategories = {
+            'Healthy Ingredients': [
+                'Broccoli', 'Parsley', 'Spinach', 'Sweet Potato', 'Carrot', 
+                'Pumpkin', 'Green Beans', 'Peas'
+            ],
+            'Other': ['Milk'],
+            'Human Grade Wet Food': [
+                'Minced Beef', 'Chicken Breast', 'Turkey', 'Salmon'
+            ],
+            'Commercial Wet Food': [
+                'Instinct - Duck', 'Instinct - Chicken', 'Instinct - Fish',
+                'Instinct Topper - Chicken', 'Instinct Topper - Duck', 'Instinct Topper - Fish',
+                'Tiki Cat - Chicken Liver', 'Tiki Cat - Turkey Liver', 'Tiki Cat - Lamb',
+                'Tiki Cat - Beef', 'Applaws - Chicken Mix'
+            ]
+        };
+        
+        // Initialize data
+        function initializeData() {
+            Object.entries(foodCategories).forEach(([category, items]) => {
+                items.forEach(item => {
+                    feedingData[item] = { week1: 0, week2: 0, week3: 0, week4: 0 };
+                });
+            });
+        }
+        
+        // Tab management
+        function showTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelector(`[onclick="showTab('${tabName}')"]`).classList.add('active');
+            
+            document.getElementById('track-tab').classList.toggle('hidden', tabName !== 'track');
+            document.getElementById('recommendations-tab').classList.toggle('hidden', tabName !== 'recommendations');
+            
+            activeTab = tabName;
+            
+            if (tabName === 'recommendations') {
+                updateRecommendations();
+            }
+        }
+        
+        // Week selection
+        function selectWeek(week) {
+            currentWeek = week;
+            document.querySelectorAll('.week-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`[onclick="selectWeek(${week})"]`).classList.add('active');
+            renderFoodCategories();
+        }
+        
+        // Data manipulation
+        function incrementFeeding(foodItem) {
+            const weekKey = `week${currentWeek}`;
+            feedingData[foodItem][weekKey]++;
+            renderFoodCategories();
+        }
+        
+        function decrementFeeding(foodItem) {
+            const weekKey = `week${currentWeek}`;
+            if (feedingData[foodItem][weekKey] > 0) {
+                feedingData[foodItem][weekKey]--;
+            }
+            renderFoodCategories();
+        }
+        
+        function getWeekTotal(foodItem, week) {
+            return feedingData[foodItem] ? feedingData[foodItem][`week${week}`] : 0;
+        }
+        
+        function getMonthTotal(foodItem) {
+            const item = feedingData[foodItem];
+            if (!item) return 0;
+            return item.week1 + item.week2 + item.week3 + item.week4;
+        }
+        
+        function resetData() {
+            if (confirm('Are you sure you want to reset all feeding data?')) {
+                initializeData();
+                renderFoodCategories();
+            }
+        }
+        
+        // Rendering
+        function renderFoodCategories() {
+            const container = document.getElementById('food-categories');
+            container.innerHTML = '';
+            
+            Object.entries(foodCategories).forEach(([category, items]) => {
+                const categoryDiv = document.createElement('div');
+                categoryDiv.className = 'category';
+                
+                const categoryTitle = document.createElement('div');
+                categoryTitle.className = 'category-title';
+                categoryTitle.textContent = category;
+                categoryDiv.appendChild(categoryTitle);
+                
+                items.forEach(item => {
+                    const foodItemDiv = document.createElement('div');
+                    foodItemDiv.className = 'food-item';
+                    
+                    const weekTotal = getWeekTotal(item, currentWeek);
+                    const monthTotal = getMonthTotal(item);
+                    
+                    foodItemDiv.innerHTML = `
+                        <div class="food-info">
+                            <h4>${item}</h4>
+                            <div class="food-stats">This week: ${weekTotal} • Month total: ${monthTotal}</div>
+                        </div>
+                        <div class="counter">
+                            <button class="counter-btn minus" onclick="decrementFeeding('${item}')">−</button>
+                            <span class="count">${weekTotal}</span>
+                            <button class="counter-btn plus" onclick="incrementFeeding('${item}')">+</button>
+                        </div>
+                    `;
+                    
+                    categoryDiv.appendChild(foodItemDiv);
+                });
+                
+                container.appendChild(categoryDiv);
+            });
+        }
+        
+        function updateRecommendations() {
+            const recommendations = getRecommendations();
+            const container = document.getElementById('recommendations-content');
+            
+            if (recommendations.length === 0) {
+                container.innerHTML = `
+                    <div class="success-message">
+                        <h3>✅ Great job!</h3>
+                        <p>Your cat's diet looks well balanced this month.</p>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = recommendations.map(rec => `
+                    <div class="recommendation ${rec.priority}">
+                        <strong>${rec.priority === 'high' ? 'High Priority' : 
+                                 rec.priority === 'medium' ? 'Medium Priority' : 'Suggestion'}:</strong>
+                        <p>${rec.message}</p>
+                    </div>
+                `).join('');
+            }
+            
+            updateMonthlyOverview();
+        }
+        
+        function updateMonthlyOverview() {
+            const container = document.getElementById('monthly-overview');
+            container.innerHTML = '<h3>Monthly Overview</h3>';
+            
+            Object.entries(foodCategories).forEach(([category, items]) => {
+                const categoryTotal = items.reduce((sum, item) => sum + getMonthTotal(item), 0);
+                
+                const overviewDiv = document.createElement('div');
+                overviewDiv.className = 'overview-item';
+                overviewDiv.innerHTML = `
+                    <h4>${category}</h4>
+                    <div>Total feedings: ${categoryTotal}</div>
+                    <div class="overview-stats">
+                        ${items.map(item => `
+                            <div class="overview-stat">
+                                <span>${item}:</span>
+                                <span>${getMonthTotal(item)}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                
+                container.appendChild(overviewDiv);
+            });
+        }
+        
+        function getRecommendations() {
+            const recommendations = [];
+            const categoryTotals = {};
+            
+            Object.entries(foodCategories).forEach(([category, items]) => {
+                categoryTotals[category] = items.reduce((sum, item) => sum + getMonthTotal(item), 0);
+            });
+            
+            const healthyTotal = categoryTotals['Healthy Ingredients'] || 0;
+            if (healthyTotal < 8) {
+                recommendations.push({
+                    message: 'Consider feeding more healthy vegetables like broccoli, spinach, or pumpkin',
+                    priority: 'high'
+                });
+            }
+            
+            const healthyItems = foodCategories['Healthy Ingredients'];
+            const leastFedHealthy = healthyItems
+                .map(item => ({ item, total: getMonthTotal(item) }))
+                .sort((a, b) => a.total - b.total)[0];
+            
+            if (leastFedHealthy && leastFedHealthy.total < 2) {
+                recommendations.push({
+                    message: `Try adding ${leastFedHealthy.item.toLowerCase()} to meals - it's been fed least this month`,
+                    priority: 'medium'
+                });
+            }
+            
+            const proteinItems = [...foodCategories['Human Grade Wet Food'], ...foodCategories['Commercial Wet Food']];
+            const fedProteins = proteinItems.filter(item => getMonthTotal(item) > 0);
+            
+            if (fedProteins.length < 3) {
+                recommendations.push({
+                    message: 'Consider adding more protein variety to your cat\'s diet',
+                    priority: 'medium'
+                });
+            }
+            
+            return recommendations;
+        }
+        
+        // Initialize app
+        initializeData();
+        renderFoodCategories();
+    </script>
+</body>
+</html>
