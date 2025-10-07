@@ -84,19 +84,38 @@
             color: white;
         }
         
-        .reset-btn {
-            background-color: #fef2f2;
-            color: #dc2626;
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .reset-btn, .download-btn {
+            flex: 1;
             border: none;
             padding: 0.5rem 1rem;
             border-radius: 0.5rem;
             cursor: pointer;
             font-size: 0.875rem;
-            margin-bottom: 1.5rem;
+            font-weight: 500;
+        }
+        
+        .reset-btn {
+            background-color: #fef2f2;
+            color: #dc2626;
         }
         
         .reset-btn:hover {
             background-color: #fecaca;
+        }
+        
+        .download-btn {
+            background-color: #f0fdf4;
+            color: #16a34a;
+        }
+        
+        .download-btn:hover {
+            background-color: #dcfce7;
         }
         
         .category {
@@ -260,7 +279,7 @@
         
         <div class="tabs">
             <button class="tab active" onclick="showTab('track')">📝 Track Feeding</button>
-            <button class="tab" onclick="showTab('recommendations')">🏆 Recommendations</button>
+            <button class="tab" onclick="showTab('recommendations')">💡 Recommendations</button>
         </div>
         
         <div id="track-tab" class="content">
@@ -271,7 +290,10 @@
                 <button class="week-btn" onclick="selectWeek(4)">Week 4</button>
             </div>
             
-            <button class="reset-btn" onclick="resetData()">Reset All Data</button>
+            <div class="action-buttons">
+                <button class="download-btn" onclick="downloadCSV()">📥 Download CSV</button>
+                <button class="reset-btn" onclick="resetData()">🔄 Reset All</button>
+            </div>
             
             <div id="food-categories"></div>
         </div>
@@ -310,9 +332,24 @@
         function initializeData() {
             Object.entries(foodCategories).forEach(([category, items]) => {
                 items.forEach(item => {
-                    feedingData[item] = { week1: 0, week2: 0, week3: 0, week4: 0 };
+                    if (!feedingData[item]) {
+                        feedingData[item] = { week1: 0, week2: 0, week3: 0, week4: 0 };
+                    }
                 });
             });
+        }
+        
+        // LocalStorage functions
+        function saveData() {
+            localStorage.setItem('catFeedingData', JSON.stringify(feedingData));
+        }
+        
+        function loadData() {
+            const saved = localStorage.getItem('catFeedingData');
+            if (saved) {
+                feedingData = JSON.parse(saved);
+            }
+            initializeData();
         }
         
         // Tab management
@@ -342,6 +379,7 @@
         function incrementFeeding(foodItem) {
             const weekKey = `week${currentWeek}`;
             feedingData[foodItem][weekKey]++;
+            saveData();
             renderFoodCategories();
         }
         
@@ -349,6 +387,7 @@
             const weekKey = `week${currentWeek}`;
             if (feedingData[foodItem][weekKey] > 0) {
                 feedingData[foodItem][weekKey]--;
+                saveData();
             }
             renderFoodCategories();
         }
@@ -364,10 +403,39 @@
         }
         
         function resetData() {
-            if (confirm('Are you sure you want to reset all feeding data?')) {
+            if (confirm('Are you sure you want to reset all feeding data? This cannot be undone!')) {
+                feedingData = {};
                 initializeData();
+                saveData();
                 renderFoodCategories();
+                alert('All data has been reset.');
             }
+        }
+        
+        // Download CSV
+        function downloadCSV() {
+            let csv = 'Food Item,Category,Week 1,Week 2,Week 3,Week 4,Total\n';
+            
+            Object.entries(foodCategories).forEach(([category, items]) => {
+                items.forEach(item => {
+                    const w1 = getWeekTotal(item, 1);
+                    const w2 = getWeekTotal(item, 2);
+                    const w3 = getWeekTotal(item, 3);
+                    const w4 = getWeekTotal(item, 4);
+                    const total = w1 + w2 + w3 + w4;
+                    csv += `"${item}","${category}",${w1},${w2},${w3},${w4},${total}\n`;
+                });
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `cat-feeding-data-${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
         }
         
         // Rendering
@@ -418,14 +486,14 @@
                 container.innerHTML = `
                     <div class="success-message">
                         <h3>✅ Great job!</h3>
-                        <p>Your cat's diet looks well balanced this month.</p>
+                        <p>Your cat's diet looks well balanced!</p>
                     </div>
                 `;
             } else {
                 container.innerHTML = recommendations.map(rec => `
                     <div class="recommendation ${rec.priority}">
-                        <strong>${rec.priority === 'high' ? 'High Priority' : 
-                                 rec.priority === 'medium' ? 'Medium Priority' : 'Suggestion'}:</strong>
+                        <strong>${rec.priority === 'high' ? '🔴 High Priority' : 
+                                 rec.priority === 'medium' ? '🟡 Medium Priority' : '🔵 Suggestion'}:</strong>
                         <p>${rec.message}</p>
                     </div>
                 `).join('');
@@ -462,38 +530,73 @@
         
         function getRecommendations() {
             const recommendations = [];
-            const categoryTotals = {};
             
+            // Determine which week to base recommendations on
+            let referenceWeek = currentWeek > 1 ? currentWeek - 1 : 1;
+            
+            // Get items fed in the reference week
+            const fedLastWeek = new Set();
             Object.entries(foodCategories).forEach(([category, items]) => {
-                categoryTotals[category] = items.reduce((sum, item) => sum + getMonthTotal(item), 0);
+                items.forEach(item => {
+                    if (getWeekTotal(item, referenceWeek) > 0) {
+                        fedLastWeek.add(item);
+                    }
+                });
             });
             
-            const healthyTotal = categoryTotals['Healthy Ingredients'] || 0;
-            if (healthyTotal < 8) {
+            // Check healthy ingredients variety
+            const healthyItems = foodCategories['Healthy Ingredients'];
+            const healthyFedLastWeek = healthyItems.filter(item => fedLastWeek.has(item));
+            const healthyNotFed = healthyItems.filter(item => !fedLastWeek.has(item));
+            
+            if (healthyFedLastWeek.length < 3) {
+                const suggestions = healthyNotFed.slice(0, 3).join(', ');
                 recommendations.push({
-                    message: 'Consider feeding more healthy vegetables like broccoli, spinach, or pumpkin',
+                    message: `Last week you fed ${healthyFedLastWeek.length} vegetable${healthyFedLastWeek.length !== 1 ? 's' : ''}. Try adding variety with: ${suggestions}`,
                     priority: 'high'
                 });
-            }
-            
-            const healthyItems = foodCategories['Healthy Ingredients'];
-            const leastFedHealthy = healthyItems
-                .map(item => ({ item, total: getMonthTotal(item) }))
-                .sort((a, b) => a.total - b.total)[0];
-            
-            if (leastFedHealthy && leastFedHealthy.total < 2) {
+            } else if (healthyNotFed.length > 0) {
+                const suggestions = healthyNotFed.slice(0, 2).join(', ');
                 recommendations.push({
-                    message: `Try adding ${leastFedHealthy.item.toLowerCase()} to meals - it's been fed least this month`,
-                    priority: 'medium'
+                    message: `Great vegetable variety! You haven't tried ${suggestions} recently - consider rotating these in`,
+                    priority: 'low'
                 });
             }
             
+            // Check protein variety
             const proteinItems = [...foodCategories['Human Grade Wet Food'], ...foodCategories['Commercial Wet Food']];
-            const fedProteins = proteinItems.filter(item => getMonthTotal(item) > 0);
+            const proteinFedLastWeek = proteinItems.filter(item => fedLastWeek.has(item));
+            const proteinNotFed = proteinItems.filter(item => !fedLastWeek.has(item));
             
-            if (fedProteins.length < 3) {
+            if (proteinFedLastWeek.length < 4) {
+                const suggestions = proteinNotFed.slice(0, 3).join(', ');
                 recommendations.push({
-                    message: 'Consider adding more protein variety to your cat\'s diet',
+                    message: `Last week you fed ${proteinFedLastWeek.length} protein source${proteinFedLastWeek.length !== 1 ? 's' : ''}. Consider rotating in: ${suggestions}`,
+                    priority: 'medium'
+                });
+            } else if (proteinNotFed.length > 0) {
+                const suggestions = proteinNotFed.slice(0, 2).join(', ');
+                recommendations.push({
+                    message: `Good protein variety! Try rotating in ${suggestions} for even more variety`,
+                    priority: 'low'
+                });
+            }
+            
+            // Check for items heavily fed last week
+            const heavyItems = [];
+            Object.entries(foodCategories).forEach(([category, items]) => {
+                items.forEach(item => {
+                    const lastWeekCount = getWeekTotal(item, referenceWeek);
+                    if (lastWeekCount > 5) {
+                        heavyItems.push({ item, count: lastWeekCount });
+                    }
+                });
+            });
+            
+            if (heavyItems.length > 0) {
+                const itemsList = heavyItems.map(h => `${h.item} (${h.count}x)`).join(', ');
+                recommendations.push({
+                    message: `You fed these items frequently last week: ${itemsList}. Consider reducing and adding variety`,
                     priority: 'medium'
                 });
             }
@@ -502,7 +605,7 @@
         }
         
         // Initialize app
-        initializeData();
+        loadData();
         renderFoodCategories();
     </script>
 </body>
